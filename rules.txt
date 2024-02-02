@@ -1,0 +1,14 @@
+Barcarrat Rules : 
+1. Place wager (your bet) – Choose between 5, 10, 15, 20
+2. Cards 2 through 9 are worth their face value in points
+3. Aces are worth 1 point whilst 10s, Jacks, Queens and Kings are worth 0 points.
+4. The total points of a hand are calculated by adding the values of the individual cards, but only the last digit of the total is used. (i.e. if a hand has a 7 and an 8, totalling 15, the hand is worth 5 points)
+5. You and the computer will be dealt 2 cards.
+6. Each party (player or computer) has the choice to draw only 1 additional card, if they are not satisfied with their hand value. (Click Hit)
+7. If you are satisfied with your hand value, you can choose to not draw (Click Stand)
+8. Compare the hand value of both players, and the winner is determined by having the higher hand value
+9. If you or the computer has a hand value of 8 or 9 in your starting hand (of 2 cards), it is called a Natural eight/nine, where you skip the drawing of additional card and compare both parties hands to determine the winner.
+10. Wager calculation is based on the winner’s hand: 
+if you have 3 cards in hand, all 3 cards have the same value (i.e. 3) OR all 3 cards have the same suit (i.e. ♠️) the winner wins 3x of the initial wager (if player lose, player loses 3x of his bet) 
+if you have 2 cards in hand, and both cards have the same value (i.e. 4) OR both cards have the same suit (i.e. ♠️) the winner wins 2x of the initial wager (if player lose, player loses 3x of his bet) 
+Otherwise, the winner only wins 1x of the initial wager

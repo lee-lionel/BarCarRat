@@ -27,16 +27,18 @@ const playerHand = document.getElementById('playerHand')
 const computerHand = document.getElementById('computerHand')
 const wagerButtons = document.querySelectorAll('.wagerButtons')
 const controlButtons = document.querySelectorAll('.controlButtons')
-let playerCard = []
-let computerCard = []
+const displayResult = document.getElementById('result')
+const endState = document.getElementById('endState')
+const continueGame = document.getElementById('continueGame')
+const controlPanel = document.getElementById('controlPanel')
 let deck
 let natural = false
-let playerActed = false
 let wagerAmt = 0
 let results
 let winLose = 0
 let multiplier = 0
 let newPlayer
+
 
 class Player {
     playerName
@@ -131,7 +133,7 @@ function checkEnter(event) {
 function startNewRound() {
     wagerContainer.style.display = 'none'
     startGameState.style.display = 'block'
-
+    controlPanel.style.display = 'inline-flex'
     deck = new Deck()
     deck.shuffle();
     drawCard(playerHand)
@@ -148,21 +150,17 @@ function startNewRound() {
     compareHands(playerHand.children, computerHand.children)
     determineWinner()
     generateMultiplier(playerHand.children,computerHand.children)
+    controlPanel.style.display = 'none'
     payOut()
-    controlButtons.style.display = 'none'
-    renderBank.innerText = newPlayer.bankBalance
     } else {
     controlButtons.forEach(button => button.addEventListener('click', controlButtonClick));
    
-
-
     }
  
     
 }
 
 function controlButtonClick(event) {
-    playerActed = true;
     if (event.target.id === 'hit' && playerHand.children.length < 3) {
         drawCard(playerHand);
     } 
@@ -172,8 +170,9 @@ function controlButtonClick(event) {
     determineWinner()
     generateMultiplier(playerHand.children,computerHand.children)
     payOut()
-    controlButtons.style.display = 'none'
+   this.parentNode.style.display = 'none'
     renderBank.innerText = newPlayer.bankBalance
+    
 }
 
 function computerAPI() {
@@ -230,8 +229,7 @@ function determineWinner() {
 }
 
 function generateMultiplier(player,computer) {
-    switch (results) {
-        
+    switch (results) {     
         case 'win':
             if (player.length === 2) {
                 const [card1, card2] = Array.from(player);
@@ -278,8 +276,24 @@ function generateMultiplier(player,computer) {
 
 function payOut() {
 newPlayer.bankBalance += (wagerAmt*multiplier*winLose)
-
+renderBank.innerText = newPlayer.bankBalance
+displayResult.textContent = results + ' $' + (wagerAmt*multiplier)
+endState.style.display = 'flex'
 }
 
+continueGame.addEventListener('click', resetGame)
 
-
+function resetGame() {
+    wagerAmt=0
+    while (playerHand.firstChild) {
+        playerHand.removeChild(playerHand.firstChild);
+    }
+    while (computerHand.firstChild) {
+        computerHand.removeChild(computerHand.firstChild);
+    }
+    deck =[]
+    natural=false
+    wagerContainer.style.display = 'block'
+    endState.style.display = 'none'
+   
+}

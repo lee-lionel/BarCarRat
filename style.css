@@ -110,5 +110,27 @@ left: 0.5rem;
     position: absolute;
     justify-content: center;
     align-self: center;
-    left: 50%
+    left: 50%;
+    display: none;
+  }
+
+  #endState {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    width: 50%;
+    border: 1px solid black;
+    align-items: center;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: aqua;
+    display: none;
+    
+
+  }
+
+  #endState button {
+    width: 20%;
   }
