@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bacarrat</title>
+    <link rel="stylesheet" href="style.css">
+    
+</head>
+<body>
+    <div id="inputBox">
+    <label>Please choose a Name:</label></br>
+    <input type="text" id="playerInput" onkeydown="checkEnter(event)" >
+    </div>
+    <div id="gameContainer" >
+    <h1>🍻🚘🐀</h1>
+    <h2 class="header">Computer</h2>
+    <div id="computerHand"> </div>
+    <h2 id="playerId" class="header"></h2>
+   <div id="playerHand">
+    </div>
+    <div id="controlPanel">
+        <button class="controlButtons" id="hit">Hit</button>
+        <button class="controlButtons" id="stand">Stand</button>
+    </div>
+    <p>Bank Balance: </p>
+    <div id="bankBalance"></div>
+     </div>
+
+    <div id="wagerContainer">
+        <h3>Place your bets</h3>
+<button class='wagerButtons' id="5">5</button>
+<button class='wagerButtons' id="10">10</button>
+<button class='wagerButtons' id="15">15</button>
+<button class='wagerButtons' id="20">20</button>
+    </div>
+    <script src="script.js"></script>
+   </body>
+</html>
