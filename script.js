@@ -258,7 +258,7 @@ function generateMultiplier(player,computer) {
                 }
             } else if (computer.length === 3) {
                 const [card1, card2, card3] = Array.from(computer);
-            if (((card1.dataset.value === card2.value) && (card1.dataset.value === card3.dataset.value)) ||((card1.dataset.suit === card2.dataset.suit) && (card2.dataset.suit === card3.dataset.suit))) {
+            if (((card1.dataset.value === card2.dataset.value) && (card1.dataset.value === card3.dataset.value)) ||((card1.dataset.suit === card2.dataset.suit) && (card2.dataset.suit === card3.dataset.suit))) {
                     multiplier = 3;
                 } else {
                     multiplier = 1;  // Default multiplier if no conditions are met
