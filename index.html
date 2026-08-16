@@ -5,39 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bacarrat</title>
     <link rel="stylesheet" href="style.css">
-    
 </head>
 <body>
+    <!-- Name entry -->
     <div id="inputBox">
-    <label>Please choose a Name:</label></br>
-    <input type="text" id="playerInput" onkeydown="checkEnter(event)" >
+        <div class="panel">
+            <p class="brand">🍻🚘🐀</p>
+            <h1 class="panel-title">Bar Car Rat</h1>
+            <p class="panel-sub">Baccarat, but with worse decisions.</p>
+            <label class="field-label" for="playerInput">Please choose a name</label>
+            <input type="text" id="playerInput" onkeydown="checkEnter(event)" autocomplete="off" placeholder="Your name">
+            <p class="hint">Press <kbd>Enter</kbd> to take a seat</p>
+        </div>
     </div>
-    <div id="gameContainer" >
-    <h1>🍻🚘🐀</h1>
-    <h2 class="header">Computer</h2>
-    <div id="computerHand"> </div>
-    <h2 id="playerId" class="header"></h2>
-   <div id="playerHand">
-    </div>
-    <div id="controlPanel">
-        <button class="controlButtons" id="hit">Hit</button>
-        <button class="controlButtons" id="stand">Stand</button>
-    </div>
-    <p>Bank Balance: </p>
-    <div id="bankBalance"></div>
-     </div>
 
-    <div id="wagerContainer">
-        <h3>Place your bets</h3>
-<button class='wagerButtons' id="5">5</button>
-<button class='wagerButtons' id="10">10</button>
-<button class='wagerButtons' id="15">15</button>
-<button class='wagerButtons' id="20">20</button>
+    <!-- Table -->
+    <div id="gameContainer">
+        <div class="table">
+            <header class="table-top">
+                <p class="brand brand-sm">🍻🚘🐀</p>
+                <div class="bank">
+                    <span class="bank-label">Bank Balance</span>
+                    <div id="bankBalance"></div>
+                </div>
+            </header>
+
+            <section class="hand-area">
+                <h2 class="header">Computer</h2>
+                <div id="computerHand" class="hand"></div>
+            </section>
+
+            <div class="table-divider" aria-hidden="true"></div>
+
+            <section class="hand-area">
+                <h2 id="playerId" class="header"></h2>
+                <div id="playerHand" class="hand"></div>
+            </section>
+
+            <div id="controlPanel">
+                <button class="controlButtons" id="hit">Hit</button>
+                <button class="controlButtons" id="stand">Stand</button>
+            </div>
+        </div>
     </div>
+
+    <!-- Betting -->
+    <div id="wagerContainer">
+        <div class="panel">
+            <h3 class="panel-title">Place your bets</h3>
+            <p class="panel-sub">Pick your chip to deal the next round.</p>
+            <div class="chips">
+                <button class='wagerButtons' id="5">5</button>
+                <button class='wagerButtons' id="10">10</button>
+                <button class='wagerButtons' id="15">15</button>
+                <button class='wagerButtons' id="20">20</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Round result -->
     <div id="endState">
         <h1>Result: You <span id="result"></span></h1>
         <button id="continueGame">Continue</button>
     </div>
+
     <script src="script.js"></script>
-   </body>
+</body>
 </html>
