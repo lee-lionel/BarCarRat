@@ -31,6 +31,11 @@ const displayResult = document.getElementById('result')
 const endState = document.getElementById('endState')
 const continueGame = document.getElementById('continueGame')
 const controlPanel = document.getElementById('controlPanel')
+const wagerBalance = document.getElementById('wagerBalance')
+const nameHint = document.getElementById('nameHint')
+const gameOver = document.getElementById('gameOver')
+const playAgain = document.getElementById('playAgain')
+const STARTING_BALANCE = 200
 let deck
 let natural = false
 let wagerAmt = 0
@@ -110,24 +115,51 @@ function generateDeck() {
 
 
 function startGame() {
-    const newDude = userName.value
+    // Guard against a second call: the wager listeners are registered once at
+    // load, but re-seating would also reset the player mid-game.
+    if (newPlayer) return
+
+    const newDude = userName.value.trim()
+    if (!newDude) {
+        nameHint.textContent = 'Please enter a name to take a seat'
+        nameHint.classList.add('hint-error')
+        userName.focus()
+        return
+    }
+
     newPlayer = new Player(newDude)
     removeInputBox.style.display = 'none'
     wagerContainer.style.display = 'block'
     renderPlayer.innerText = newPlayer.playerName
-   
-    wagerButtons.forEach(button => button.addEventListener('click', () => {
-        wagerAmt = parseInt(button.textContent,10)
-        startNewRound()
-       
-    }))
-      
-    
+    updateChips()
 }
+
+/* Chips above the current balance are disabled, so a bet can never exceed
+   what the player actually has. */
+function updateChips() {
+    if (!newPlayer) return
+    wagerBalance.innerText = `$${newPlayer.bankBalance}`
+    wagerButtons.forEach(button => {
+        const amount = parseInt(button.textContent, 10)
+        button.disabled = amount > newPlayer.bankBalance
+    })
+}
+
+// Registered once, at load, rather than inside startGame — anonymous
+// listeners added per call would stack up.
+wagerButtons.forEach(button => button.addEventListener('click', () => {
+    if (!newPlayer) return
+    const amount = parseInt(button.textContent, 10)
+    if (amount > newPlayer.bankBalance) return
+    wagerAmt = amount
+    startNewRound()
+}))
 
 function checkEnter(event) {
     if (event.key === 'Enter') {
         startGame();
+    } else {
+        nameHint.classList.remove('hint-error')
     }
 }
 function startNewRound() {
@@ -275,7 +307,9 @@ function generateMultiplier(player,computer) {
 
 
 function payOut() {
-newPlayer.bankBalance += (wagerAmt*multiplier*winLose)
+// A loss pays up to 3x the wager, so even an affordable bet can overshoot
+// the balance — clamp at zero rather than going into debt.
+newPlayer.bankBalance = Math.max(0, newPlayer.bankBalance + (wagerAmt*multiplier*winLose))
 renderBank.innerText = newPlayer.bankBalance
 displayResult.textContent = results + ' $' + (wagerAmt*multiplier)
 endState.style.display = 'flex'
@@ -293,7 +327,27 @@ function resetGame() {
     }
     deck =[]
     natural=false
-    wagerContainer.style.display = 'block'
     endState.style.display = 'none'
-   
+    // The table and the betting panel are siblings in a flex row, so the
+    // table has to be hidden or they render side by side.
+    startGameState.style.display = 'none'
+
+    if (newPlayer.bankBalance <= 0) {
+        // The betting panel is a flex sibling, so it has to be hidden or it
+        // sits alongside the game-over panel.
+        wagerContainer.style.display = 'none'
+        gameOver.style.display = 'flex'
+        return
+    }
+
+    updateChips()
+    wagerContainer.style.display = 'block'
 }
+
+playAgain.addEventListener('click', function () {
+    newPlayer.bankBalance = STARTING_BALANCE
+    renderBank.innerText = newPlayer.bankBalance
+    gameOver.style.display = 'none'
+    updateChips()
+    wagerContainer.style.display = 'block'
+})

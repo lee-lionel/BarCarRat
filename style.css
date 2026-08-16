@@ -161,6 +161,21 @@ h3 {
   color: rgba(247, 242, 230, 0.45);
 }
 
+.hint-error {
+  color: #f3a9a0;
+}
+
+.wagerButtons:disabled {
+  cursor: not-allowed;
+  opacity: 0.32;
+  filter: grayscale(0.6);
+}
+
+.wagerButtons:disabled:hover {
+  transform: none;
+  box-shadow: var(--shadow-card), inset 0 0 0 4px rgba(0, 0, 0, 0.14);
+}
+
 kbd {
   padding: 2px 6px;
   font-family: inherit;
@@ -453,7 +468,8 @@ kbd {
    ============================================================ */
 
 /* script.js sets display:flex — keep this a flex column. */
-#endState {
+#endState,
+#gameOver {
   display: none;
   flex-direction: column;
   align-items: center;
@@ -472,7 +488,12 @@ kbd {
   box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
-#endState h1 {
+#gameOver {
+  flex-direction: column;
+}
+
+#endState h1,
+#gameOver h1 {
   font-size: clamp(20px, 5vw, 27px);
   color: var(--gold-300);
 }
@@ -485,7 +506,8 @@ kbd {
   text-transform: capitalize;
 }
 
-#continueGame {
+#continueGame,
+#playAgain {
   width: auto;
   padding: 12px 34px;
   font-family: var(--font-body);
@@ -502,12 +524,14 @@ kbd {
   transition: transform 0.15s ease, filter 0.15s ease;
 }
 
-#continueGame:hover {
+#continueGame:hover,
+#playAgain:hover {
   transform: translateY(-2px);
   filter: brightness(1.06);
 }
 
-#continueGame:focus-visible {
+#continueGame:focus-visible,
+#playAgain:focus-visible {
   outline: 3px solid var(--cream);
   outline-offset: 3px;
 }
