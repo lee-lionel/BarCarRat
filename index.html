@@ -14,8 +14,8 @@
             <h1 class="panel-title">Bar Car Rat</h1>
             <p class="panel-sub">Baccarat, but with worse decisions.</p>
             <label class="field-label" for="playerInput">Please choose a name</label>
-            <input type="text" id="playerInput" onkeydown="checkEnter(event)" autocomplete="off" placeholder="Your name">
-            <p class="hint">Press <kbd>Enter</kbd> to take a seat</p>
+            <input type="text" id="playerInput" onkeydown="checkEnter(event)" autocomplete="off" placeholder="Your name" maxlength="20">
+            <p class="hint" id="nameHint">Press <kbd>Enter</kbd> to take a seat</p>
         </div>
     </div>
 
@@ -60,7 +60,15 @@
                 <button class='wagerButtons' id="15">15</button>
                 <button class='wagerButtons' id="20">20</button>
             </div>
+            <p class="hint">Balance: <span id="wagerBalance"></span></p>
         </div>
+    </div>
+
+    <!-- Out of chips -->
+    <div id="gameOver">
+        <h1>Out of chips</h1>
+        <p class="panel-sub">Your balance reached zero.</p>
+        <button id="playAgain">Play again</button>
     </div>
 
     <!-- Round result -->
