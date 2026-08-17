@@ -149,10 +149,18 @@ h3 {
   color: rgba(247, 242, 230, 0.35);
 }
 
+#playerInput:focus-visible {
+  outline: none;
+  border-color: var(--gold-300);
+  /* 0.18 alpha was technically a focus ring and practically invisible on
+     felt. */
+  box-shadow: 0 0 0 3px rgba(240, 220, 154, 0.55);
+}
+
 #playerInput:focus {
   outline: none;
   border-color: var(--gold-400);
-  box-shadow: 0 0 0 3px rgba(226, 196, 105, 0.18);
+  box-shadow: 0 0 0 3px rgba(226, 196, 105, 0.35);
 }
 
 .hint {
