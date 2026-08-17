@@ -9,13 +9,13 @@ step, no dependencies, three files.
 
 ## How the game works
 
-Back a hand — **Player**, **Banker** or **Tie** — and stake a chip. Both hands
-are dealt two cards, the Banker's face down.
+Stake a chip. You and the banker are dealt two cards each, the banker's face
+down.
 
-At a real table nobody decides anything from here: the Player hand draws on
+At a real table nobody decides anything from here: the player hand draws on
 0–5 by rule. **This table gives you that call.** Hit or stand as you like; the
 book's advice is printed under the buttons and ignoring it is the entire
-premise. The Banker still plays strictly by the published table.
+premise. The banker still plays strictly by the published table.
 
 **Card values.** Ace is 1, two through nine are face value, and ten, jack,
 queen and king are all **zero**. A hand is the sum of its cards **modulo ten**,
@@ -44,16 +44,39 @@ draws depends on the Banker's total *and* the card the Player drew:
 
 ![A resolved hand: Banker 8 against Player 6, with the winning hand lit](screenshots/04-result.png)
 
-## What the bets pay
+## Hands and what they pay
 
-| Bet    | Pays        | Note                                                        |
-| ------ | ----------- | ----------------------------------------------------------- |
-| Player | 1 : 1       |                                                              |
-| Banker | 1 : 1 − 5%  | The commission is what stops the slightly-favoured hand being free money |
-| Tie    | 8 : 1       |                                                              |
+Points decide most rounds, but some shapes are worth more than their points —
+and four of them win outright no matter what the points say. A straight of
+4-5-6 counts **5** in baccarat, and three pictures counts **0**, the worst
+total in the game. Without an auto-win rule the best-looking hands on the felt
+would be the ones that lose.
 
-A tie **pushes** Player and Banker bets — the stake comes back rather than
-being taken.
+Payouts are ordered by how often each hand actually appears in three cards
+from a 52-card deck, so a rarer hand always pays more:
+
+| Hand            | Frequency | Pays | Wins outright |
+| --------------- | --------- | ---- | ------------- |
+| Straight flush  | 0.20 %    | 6×   | yes           |
+| Three of a kind | 0.24 %    | 5×   | yes           |
+| Three pictures  | 0.92 %    | 4×   | yes           |
+| Straight        | 2.71 %    | 3×   | yes           |
+| Flush           | 4.98 %    | 3×   | no            |
+| Pair            | 16.29 %   | 2×   | no            |
+| Anything else   | 74.66 %   | 1×   | no            |
+
+Two-card hands keep the original rule: a **pair** or a **matched suit** pays 2×.
+
+A hand that wins outright beats any hand ranked below it. Two hands of the same
+rank fall back to points. **Flush** and **pair** are bonuses only — they still
+have to win on points, they just change what the win is worth.
+
+The multiplier cuts both ways. The banker drawing a straight flush against you
+costs six times your stake, exactly as it would pay six times if it were
+yours. A tie is a **push**: the stake comes back.
+
+Those frequencies aren't guesses — the test suite classifies all 22,100
+possible three-card hands and checks the counts against them.
 
 ## At the table
 
@@ -79,9 +102,9 @@ A gold rail marks the hand you backed. The winning hand lifts and glows.
 
 The rules live in pure functions with no DOM and no timing —
 `totalOf`, `isNatural`, `playerDraws`, `bankerDraws`, `winningSide`, `settle` —
-so they can be checked directly against the table above. `playerDraws` is what
-the advice line reports rather than what the game enforces; the Banker's rule
-is enforced exactly.
+plus `evaluateHand` for the shapes above — so they can be checked directly
+against the tables. `playerDraws` is what the advice line reports rather than
+what the game enforces; the banker's rule is enforced exactly.
 
 `prefers-reduced-motion` is respected throughout; the animation collapses and
 the game plays instantly.

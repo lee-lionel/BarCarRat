@@ -30,14 +30,44 @@ const cardValue = {
     'K':0
 }
 
-/* What each bet returns on a win, as a multiple of the stake. The banker
-   bet carries the usual 5% commission, which is what stops backing the
-   slightly-favoured banker hand from being free money. */
-const PAYOUT = {
-    player: 1,
-    banker: 0.95,
-    tie: 8
+/* ------------------------------------------------------------------
+   The hand table.
+
+   Payouts are ordered by how often each hand actually turns up in three
+   cards from a 52-card deck, so the rarer hand always pays more:
+
+     straight flush   0.20%   6x   auto win
+     three of a kind  0.24%   5x   auto win
+     three pictures   0.92%   4x   auto win
+     straight         2.71%   3x   auto win
+     flush            4.98%   3x
+     pair            16.29%   2x
+     plain           74.66%   1x
+
+   An "auto win" beats any lower-ranked hand outright, whatever the
+   points say — a straight of 4-5-6 counts 5 in baccarat and would
+   otherwise lose to almost anything. Three pictures counts 0, the worst
+   total in the game, which is the joke.
+
+   The bonus hands (flush, pair) still have to win on points; they only
+   change what the win is worth.
+
+   Two-card hands keep the original rules: a pair or a matched suit
+   pays 2x.
+   ------------------------------------------------------------------ */
+
+const HANDS = {
+    STRAIGHT_FLUSH: { rank: 6, name: 'Straight flush',  multiplier: 6, auto: true  },
+    TRIPS:          { rank: 5, name: 'Three of a kind', multiplier: 5, auto: true  },
+    PICTURES:       { rank: 4, name: 'Three pictures',  multiplier: 4, auto: true  },
+    STRAIGHT:       { rank: 3, name: 'Straight',        multiplier: 3, auto: true  },
+    FLUSH:          { rank: 2, name: 'Flush',           multiplier: 3, auto: false },
+    PAIR:           { rank: 1, name: 'Pair',            multiplier: 2, auto: false },
+    SUITED:         { rank: 1, name: 'Suited',          multiplier: 2, auto: false },
+    PLAIN:          { rank: 0, name: '',                multiplier: 1, auto: false },
 }
+
+const PICTURE_CARDS = ['J', 'Q', 'K']
 
 const STARTING_BALANCE = 200
 
@@ -50,7 +80,6 @@ const startGameState = document.getElementById("gameContainer")
 const playerHand = document.getElementById('playerHand')
 const computerHand = document.getElementById('computerHand')
 const wagerButtons = document.querySelectorAll('.wagerButtons')
-const sideButtons = document.querySelectorAll('.sideButton')
 const displayResult = document.getElementById('result')
 const resultDetail = document.getElementById('resultDetail')
 const endState = document.getElementById('endState')
@@ -67,7 +96,6 @@ const bankerArea = document.getElementById('bankerArea')
 
 let deck
 let wagerAmt = 0
-let betSide = 'player'
 let newPlayer
 /** Set while a round is running, so a second stake can't start one. */
 let roundInProgress = false
@@ -183,22 +211,63 @@ function bankerDraws(bankerTotal, playerThird) {
     }
 }
 
-/** Which hand took the round. */
-function winningSide(playerTotal, bankerTotal) {
-    if (playerTotal > bankerTotal) return 'player'
-    if (bankerTotal > playerTotal) return 'banker'
+/**
+ * What a hand is, beyond its points. Pure — takes plain {value, suit}
+ * objects, so it can be checked against the odds directly.
+ */
+function evaluateHand(cards) {
+    const values = cards.map(card => card.value)
+    const suits = cards.map(card => card.suit)
+    const total = totalOf(values)
+    const oneSuit = suits.every(suit => suit === suits[0])
+
+    if (cards.length >= 3) {
+        const allPictures = values.every(value => PICTURE_CARDS.includes(value))
+        const order = values.map(value => VALUES.indexOf(value)).sort((a, b) => a - b)
+        const run = order[1] === order[0] + 1 && order[2] === order[1] + 1
+        const allSame = values.every(value => value === values[0])
+
+        if (run && oneSuit) return { ...HANDS.STRAIGHT_FLUSH, total }
+        if (allSame) return { ...HANDS.TRIPS, total }
+        // J-Q-K is both a run and three pictures; pictures is the rarer read
+        // of the two only after straight flush and trips are ruled out.
+        if (allPictures) return { ...HANDS.PICTURES, total }
+        if (run) return { ...HANDS.STRAIGHT, total }
+        if (oneSuit) return { ...HANDS.FLUSH, total }
+        if (new Set(values).size < values.length) return { ...HANDS.PAIR, total }
+        return { ...HANDS.PLAIN, total }
+    }
+
+    if (values[0] === values[1]) return { ...HANDS.PAIR, total }
+    if (oneSuit) return { ...HANDS.SUITED, total }
+    return { ...HANDS.PLAIN, total }
+}
+
+/**
+ * Which hand took the round.
+ *
+ * An auto-win hand outranks anything below it regardless of points — that
+ * is the whole point of it, since a straight counts badly and three
+ * pictures counts zero. Everything else is decided on points as usual.
+ */
+function winningSide(player, banker) {
+    if ((player.auto || banker.auto) && player.rank !== banker.rank) {
+        return player.rank > banker.rank ? 'player' : 'banker'
+    }
+    if (player.total > banker.total) return 'player'
+    if (banker.total > player.total) return 'banker'
     return 'tie'
 }
 
 /**
- * What the round returns to the punter, as a signed change to the balance.
- * A tie result returns the stake on player and banker bets rather than
- * taking it — that's the push every baccarat table pays.
+ * The change to the balance. The winning hand's multiplier sets the size of
+ * it either way, so a straight flush against you costs six times the stake
+ * exactly as it would pay six times if it were yours. A tie is a push.
  */
-function settle(side, stake, outcome) {
-    if (side === outcome) return Math.floor(stake * PAYOUT[side])
+function settle(stake, outcome, player, banker) {
     if (outcome === 'tie') return 0
-    return -stake
+    if (outcome === 'player') return stake * player.multiplier
+    return -stake * banker.multiplier
 }
 
 /* ============================================================
@@ -235,13 +304,6 @@ function updateChips() {
     })
 }
 
-sideButtons.forEach(button => button.addEventListener('click', () => {
-    betSide = button.dataset.side
-    sideButtons.forEach(other =>
-        other.setAttribute('aria-checked', String(other === button))
-    )
-}))
-
 // Registered once, at load, rather than inside startGame — anonymous
 // listeners added per call would stack up.
 wagerButtons.forEach(button => button.addEventListener('click', () => {
@@ -261,8 +323,6 @@ function checkEnter(event) {
     }
 }
 
-const SIDE_LABEL = { player: 'Player', banker: 'Banker', tie: 'Tie' }
-
 /**
  * Deals and plays a round out. The hands are decided by the rules above;
  * everything else here is pacing.
@@ -275,9 +335,8 @@ async function startNewRound() {
     deck = new Deck()
     deck.shuffle()
 
-    backingEl.textContent = `You backed ${SIDE_LABEL[betSide]} for $${wagerAmt}`
-    punterArea.classList.toggle('is-backed', betSide === 'player')
-    bankerArea.classList.toggle('is-backed', betSide === 'banker')
+    backingEl.textContent = `Staked $${wagerAmt}`
+    punterArea.classList.add('is-backed')
 
     // Player, banker, player, banker — the banker's hand face down.
     drawCard(playerHand)
@@ -333,7 +392,7 @@ async function startNewRound() {
 
     showTotal(playerTotalEl, playerTotal)
     showTotal(bankerTotalEl, bankerTotal)
-    await finishRound(playerTotal, bankerTotal)
+    await finishRound()
 }
 
 /**
@@ -374,14 +433,25 @@ function handValues(container) {
     return Array.from(container.children).map(card => card.dataset.value)
 }
 
+/** The cards on the table, as plain objects the rules can read. */
+function handCards(container) {
+    return Array.from(container.children).map(card => ({
+        value: card.dataset.value,
+        suit: card.dataset.suit,
+    }))
+}
+
 function showTotal(el, total) {
     el.textContent = total
 }
 
 /** Pays the round out and presents it. */
-async function finishRound(playerTotal, bankerTotal) {
-    const outcome = winningSide(playerTotal, bankerTotal)
-    const change = settle(betSide, wagerAmt, outcome)
+async function finishRound() {
+    const player = evaluateHand(handCards(playerHand))
+    const banker = evaluateHand(handCards(computerHand))
+    const outcome = winningSide(player, banker)
+    const change = settle(wagerAmt, outcome, player, banker)
+
     const previousBalance = newPlayer.bankBalance
     newPlayer.bankBalance = Math.max(0, previousBalance + change)
 
@@ -389,8 +459,16 @@ async function finishRound(playerTotal, bankerTotal) {
     displayResult.textContent =
         verdict === 'push' ? 'push' : `${verdict} $${Math.abs(change)}`
     endState.dataset.outcome = verdict
-    resultDetail.textContent =
-        `${SIDE_LABEL[outcome]} wins — Player ${playerTotal}, Banker ${bankerTotal}`
+
+    // Say why, so a hand that wins on 0 points doesn't look like a bug.
+    const decider = outcome === 'player' ? player : outcome === 'banker' ? banker : null
+    const named = decider && decider.name
+    resultDetail.textContent = named
+        ? `${decider.name} — ${decider.multiplier}x. You ${player.total}, banker ${banker.total}.`
+        : `You ${player.total}, banker ${banker.total}.`
+
+    // A hand that wins on its shape rather than its points gets called.
+    if (decider && decider.auto) await announce(decider.name, 1000)
 
     markOutcome(outcome)
     countTo(renderBank, previousBalance, newPlayer.bankBalance)
@@ -584,5 +662,8 @@ playAgain.addEventListener('click', function () {
 
 /* Exposed for the rules test, which drives these directly. */
 if (typeof window !== 'undefined') {
-    window.__rules = { totalOf, isNatural, playerDraws, bankerDraws, winningSide, settle }
+    window.__rules = {
+        totalOf, isNatural, playerDraws, bankerDraws,
+        evaluateHand, winningSide, settle, HANDS,
+    }
 }

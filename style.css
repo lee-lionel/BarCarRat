@@ -739,58 +739,12 @@ kbd {
    Bet side, totals and the backed hand
    ============================================================ */
 
-.sides {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  margin-top: 12px;
-}
 
-.sideButton {
-  flex: 1 1 120px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 10px 12px;
-  font-family: var(--font-body);
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--cream);
-  cursor: pointer;
-  background: rgba(0, 0, 0, 0.28);
-  border: 1px solid rgba(226, 196, 105, 0.28);
-  border-radius: var(--radius-sm);
-  transition: border-color 0.18s ease, background 0.18s ease, transform 0.15s ease;
-}
 
-.sideButton .odds {
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  color: rgba(247, 242, 230, 0.5);
-}
 
-.sideButton:hover {
-  transform: translateY(-2px);
-  border-color: rgba(226, 196, 105, 0.5);
-}
 
-.sideButton[aria-checked="true"] {
-  background: linear-gradient(170deg, rgba(226, 196, 105, 0.22), rgba(226, 196, 105, 0.08));
-  border-color: var(--gold-400);
-}
 
-.sideButton[aria-checked="true"] .odds {
-  color: var(--gold-300);
-}
 
-.sideButton:focus-visible {
-  outline: 3px solid var(--gold-300);
-  outline-offset: 3px;
-}
 
 /* Running hand total, beside the hand's name. */
 .total {
