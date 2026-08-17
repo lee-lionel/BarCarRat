@@ -1,6 +1,16 @@
+/* ============================================================
+   Bar Car Rat — punto banco
+
+   Real baccarat has no decisions once the cards are out: you back a
+   hand, and both hands then draw by fixed rule. So the game is a bet
+   and a reveal, not a Hit/Stand. The drawing rules below are the
+   standard punto banco table.
+   ============================================================ */
+
 const SUITS = ["♦","♣","♥","♠"]
 const VALUES = ["A","2","3","4","5","6","7","8","9", "10", "J","Q","K"]
 
+/* Baccarat counts tens and courts as zero, aces as one. */
 const cardValue = {
     'A':1,
     '2':2,
@@ -11,11 +21,22 @@ const cardValue = {
     '7':7,
     '8':8,
     '9':9,
-    '10':10,
-    'J':10,
-    'Q':10,
-    'K':10
+    '10':0,
+    'J':0,
+    'Q':0,
+    'K':0
 }
+
+/* What each bet returns on a win, as a multiple of the stake. The banker
+   bet carries the usual 5% commission, which is what stops backing the
+   slightly-favoured banker hand from being free money. */
+const PAYOUT = {
+    player: 1,
+    banker: 0.95,
+    tie: 8
+}
+
+const STARTING_BALANCE = 200
 
 const userName = document.getElementById("playerInput")
 const wagerContainer = document.getElementById("wagerContainer")
@@ -26,37 +47,36 @@ const startGameState = document.getElementById("gameContainer")
 const playerHand = document.getElementById('playerHand')
 const computerHand = document.getElementById('computerHand')
 const wagerButtons = document.querySelectorAll('.wagerButtons')
-const controlButtons = document.querySelectorAll('.controlButtons')
+const sideButtons = document.querySelectorAll('.sideButton')
 const displayResult = document.getElementById('result')
+const resultDetail = document.getElementById('resultDetail')
 const endState = document.getElementById('endState')
 const continueGame = document.getElementById('continueGame')
-const controlPanel = document.getElementById('controlPanel')
 const wagerBalance = document.getElementById('wagerBalance')
 const nameHint = document.getElementById('nameHint')
 const gameOver = document.getElementById('gameOver')
 const playAgain = document.getElementById('playAgain')
-const STARTING_BALANCE = 200
-let deck
-let natural = false
-let wagerAmt = 0
-let results
-let winLose = 0
-let multiplier = 0
-let newPlayer
+const playerTotalEl = document.getElementById('playerTotal')
+const bankerTotalEl = document.getElementById('bankerTotal')
+const backingEl = document.getElementById('backing')
+const punterArea = document.getElementById('punterArea')
+const bankerArea = document.getElementById('bankerArea')
 
+let deck
+let wagerAmt = 0
+let betSide = 'player'
+let newPlayer
+/** Set while a round is running, so a second stake can't start one. */
+let roundInProgress = false
 
 class Player {
     playerName
     bankBalance
-    constructor(playerName, bankBalance=200) {
+    constructor(playerName, bankBalance=STARTING_BALANCE) {
         this.playerName = playerName
         this.bankBalance = bankBalance
-       
     }
-
-
 }
-
 
 class Deck {
     cards
@@ -67,7 +87,6 @@ class Deck {
     get numberOfCards() {
         return this.cards.length
     }
-
 
     shuffle() {
         for(let i= this.numberOfCards -1; i>0; i--){
@@ -111,12 +130,79 @@ function generateDeck() {
     })
 }
 
+/* ============================================================
+   The rules. Pure functions — no DOM, no timing — so they can be
+   checked directly against the published drawing table.
+   ============================================================ */
 
+/** A baccarat hand is the sum of its cards, modulo ten. */
+function totalOf(values) {
+    return values.reduce((sum, value) => sum + cardValue[value], 0) % 10
+}
 
+/** 8 or 9 on the first two cards ends the round immediately. */
+function isNatural(total) {
+    return total === 8 || total === 9
+}
+
+/** The player hand draws on 0-5 and stands on 6-7. */
+function playerDraws(playerTotal) {
+    return playerTotal <= 5
+}
+
+/**
+ * The banker's rule. When the player stood, the banker uses the player's
+ * rule; when the player drew, whether the banker draws depends on both the
+ * banker's total and the value of the card the player drew.
+ *
+ * @param {number} bankerTotal 0-7
+ * @param {number|null} playerThird point value of the player's third card,
+ *   or null if the player stood.
+ */
+function bankerDraws(bankerTotal, playerThird) {
+    if (playerThird === null) return bankerTotal <= 5
+
+    switch (bankerTotal) {
+        case 0:
+        case 1:
+        case 2:
+            return true
+        case 3:
+            return playerThird !== 8
+        case 4:
+            return playerThird >= 2 && playerThird <= 7
+        case 5:
+            return playerThird >= 4 && playerThird <= 7
+        case 6:
+            return playerThird === 6 || playerThird === 7
+        default:
+            return false
+    }
+}
+
+/** Which hand took the round. */
+function winningSide(playerTotal, bankerTotal) {
+    if (playerTotal > bankerTotal) return 'player'
+    if (bankerTotal > playerTotal) return 'banker'
+    return 'tie'
+}
+
+/**
+ * What the round returns to the punter, as a signed change to the balance.
+ * A tie result returns the stake on player and banker bets rather than
+ * taking it — that's the push every baccarat table pays.
+ */
+function settle(side, stake, outcome) {
+    if (side === outcome) return Math.floor(stake * PAYOUT[side])
+    if (outcome === 'tie') return 0
+    return -stake
+}
+
+/* ============================================================
+   Table
+   ============================================================ */
 
 function startGame() {
-    // Guard against a second call: the wager listeners are registered once at
-    // load, but re-seating would also reset the player mid-game.
     if (newPlayer) return
 
     const newDude = userName.value.trim()
@@ -131,6 +217,7 @@ function startGame() {
     removeInputBox.style.display = 'none'
     wagerContainer.style.display = 'block'
     renderPlayer.innerText = newPlayer.playerName
+    renderBank.innerText = newPlayer.bankBalance
     updateChips()
 }
 
@@ -145,13 +232,21 @@ function updateChips() {
     })
 }
 
+sideButtons.forEach(button => button.addEventListener('click', () => {
+    betSide = button.dataset.side
+    sideButtons.forEach(other =>
+        other.setAttribute('aria-checked', String(other === button))
+    )
+}))
+
 // Registered once, at load, rather than inside startGame — anonymous
 // listeners added per call would stack up.
 wagerButtons.forEach(button => button.addEventListener('click', () => {
-    if (!newPlayer) return
+    if (!newPlayer || roundInProgress) return
     const amount = parseInt(button.textContent, 10)
     if (amount > newPlayer.bankBalance) return
     wagerAmt = amount
+    tossChip(button)
     startNewRound()
 }))
 
@@ -162,58 +257,107 @@ function checkEnter(event) {
         nameHint.classList.remove('hint-error')
     }
 }
-function startNewRound() {
+
+const SIDE_LABEL = { player: 'Player', banker: 'Banker', tie: 'Tie' }
+
+/**
+ * Deals and plays a round out. The hands are decided by the rules above;
+ * everything else here is pacing.
+ */
+async function startNewRound() {
+    roundInProgress = true
     wagerContainer.style.display = 'none'
     startGameState.style.display = 'block'
-    controlPanel.style.display = 'inline-flex'
+    dealIndex = 0
     deck = new Deck()
-    deck.shuffle();
+    deck.shuffle()
+
+    backingEl.textContent = `You backed ${SIDE_LABEL[betSide]} for $${wagerAmt}`
+    punterArea.classList.toggle('is-backed', betSide === 'player')
+    bankerArea.classList.toggle('is-backed', betSide === 'banker')
+
+    // Player, banker, player, banker — the banker's hand face down.
     drawCard(playerHand)
+    drawCard(computerHand, true)
     drawCard(playerHand)
-    drawCard(computerHand,true)
-    drawCard(computerHand,true)
-    renderBank.innerText = newPlayer.bankBalance
-    checkForNatural(playerHand.children,computerHand.children)
+    drawCard(computerHand, true)
+
+    await pause(dealSettleDelay() + 260)
+
+    let playerTotal = totalOf(handValues(playerHand))
+    let bankerTotal = totalOf(handValues(computerHand))
+    showTotal(playerTotalEl, playerTotal)
+
+    const natural = isNatural(playerTotal) || isNatural(bankerTotal)
 
     if (natural) {
-    for (const child of computerHand.children) {
-        child.classList.remove('facedown');
-    }
-    compareHands(playerHand.children, computerHand.children)
-    determineWinner()
-    generateMultiplier(playerHand.children,computerHand.children)
-    controlPanel.style.display = 'none'
-    payOut()
+        await announce('Natural')
+        await revealHand(computerHand)
+        bankerTotal = totalOf(handValues(computerHand))
+        showTotal(bankerTotalEl, bankerTotal)
     } else {
-    controlButtons.forEach(button => button.addEventListener('click', controlButtonClick));
-   
-    }
- 
-    
-}
-
-function controlButtonClick(event) {
-    if (event.target.id === 'hit' && playerHand.children.length < 3) {
-        drawCard(playerHand);
-    } 
-    
-    computerAPI();
-    compareHands(playerHand.children,computerHand.children)
-    determineWinner()
-    generateMultiplier(playerHand.children,computerHand.children)
-    payOut()
-   this.parentNode.style.display = 'none'
-    renderBank.innerText = newPlayer.bankBalance
-    
-}
-
-function computerAPI() {
-    if(handValue(computerHand.children)<5 && computerHand.children.length<3) {
-        drawCard(computerHand,true)
+        // The player hand acts first, in full view.
+        let playerThird = null
+        if (playerDraws(playerTotal)) {
+            await announce('Player draws', 800)
+            drawCard(playerHand)
+            await pause(dealSettleDelay() + 200)
+            const values = handValues(playerHand)
+            playerThird = cardValue[values[2]]
+            playerTotal = totalOf(values)
+            showTotal(playerTotalEl, playerTotal)
+        } else {
+            await announce('Player stands', 700)
         }
-        for (const child of computerHand.children) {
-            child.classList.remove('facedown');
+
+        // Then the banker's hand is turned over and plays.
+        await revealHand(computerHand)
+        bankerTotal = totalOf(handValues(computerHand))
+        showTotal(bankerTotalEl, bankerTotal)
+        await pause(320)
+
+        if (bankerDraws(bankerTotal, playerThird)) {
+            await announce('Banker draws', 800)
+            drawCard(computerHand)
+            await pause(dealSettleDelay() + 200)
+            bankerTotal = totalOf(handValues(computerHand))
+            showTotal(bankerTotalEl, bankerTotal)
+        }
     }
+
+    showTotal(playerTotalEl, playerTotal)
+    showTotal(bankerTotalEl, bankerTotal)
+    await finishRound(playerTotal, bankerTotal)
+}
+
+/** The point values of a hand, in dealt order. */
+function handValues(container) {
+    return Array.from(container.children).map(card => card.dataset.value)
+}
+
+function showTotal(el, total) {
+    el.textContent = total
+}
+
+/** Pays the round out and presents it. */
+async function finishRound(playerTotal, bankerTotal) {
+    const outcome = winningSide(playerTotal, bankerTotal)
+    const change = settle(betSide, wagerAmt, outcome)
+    const previousBalance = newPlayer.bankBalance
+    newPlayer.bankBalance = Math.max(0, previousBalance + change)
+
+    const verdict = change > 0 ? 'win' : change < 0 ? 'lose' : 'push'
+    displayResult.textContent =
+        verdict === 'push' ? 'push' : `${verdict} $${Math.abs(change)}`
+    endState.dataset.outcome = verdict
+    resultDetail.textContent =
+        `${SIDE_LABEL[outcome]} wins — Player ${playerTotal}, Banker ${bankerTotal}`
+
+    markOutcome(outcome)
+    countTo(renderBank, previousBalance, newPlayer.bankBalance)
+    await pause(680)
+    endState.style.display = 'flex'
+    roundInProgress = false
 }
 
 function drawCard(container, facedown=false) {
@@ -222,97 +366,135 @@ function drawCard(container, facedown=false) {
     if (facedown) {
         cardElement.classList.add('facedown');
     }
+    // Stagger across the whole round, not per hand, so the four opening cards
+    // land player, banker, player, banker the way they're actually dealt.
+    cardElement.style.setProperty('--i', dealIndex);
+    dealSettlesAt = performance.now() + dealIndex * DEAL_STEP + DEAL_DURATION;
+    dealIndex += 1;
     return container.appendChild(cardElement);
 }
 
+/* ============================================================
+   Table feel — timing and reveals only. None of this decides
+   anything; the hands are settled by the rules above.
+   ============================================================ */
 
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-function handValue(hand) {
-    const handArray = Array.from(hand);
-    const handValue = handArray.reduce((total, card) => total + cardValue[card.dataset.value], 0);
-    return handValue % 10;
+/* Deal pacing. Must match the `deal` animation in style.css. */
+const DEAL_STEP = 160;
+const DEAL_DURATION = 520;
+let dealIndex = 0;
+/** When the last card dealt will have finished landing. */
+let dealSettlesAt = 0;
+
+/** Milliseconds until every dealt card has come to rest. */
+function dealSettleDelay() {
+    if (reducedMotion.matches) return 0;
+    return Math.max(0, dealSettlesAt - performance.now());
 }
 
+/** Holds the table for a beat, so nothing resolves on top of the deal. */
+function pause(ms) {
+    if (reducedMotion.matches) return Promise.resolve();
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-function checkForNatural(player,computer) {
-   
-    if (handValue(player)>=8 || handValue(computer)>=8) {
-        natural = true
+/**
+ * Turns a face-down card over. The face is swapped at the halfway point of
+ * the rotation, while the card is edge-on, so you never see it change.
+ */
+function flipUp(card, delay = 0) {
+    if (reducedMotion.matches) {
+        card.classList.remove('facedown');
+        return Promise.resolve();
     }
-    return natural
+    return new Promise(resolve => {
+        setTimeout(() => {
+            card.classList.add('flipping');
+            setTimeout(() => card.classList.remove('facedown'), 220);
+            setTimeout(() => {
+                card.classList.remove('flipping');
+                resolve();
+            }, 460);
+        }, delay);
+    });
 }
 
-function compareHands(player, computer) {
-    if (handValue(player) === handValue(computer)) {
-       results = 'tie'
-    } else if (handValue(player) > handValue(computer)) {
-       results = 'win'
-    } else {
-       results = 'lose'
+/** Turns the banker's hand over one card at a time. */
+function revealHand(container) {
+    const hidden = Array.from(container.children).filter(card =>
+        card.classList.contains('facedown')
+    );
+    if (!hidden.length) return Promise.resolve();
+    return Promise.all(hidden.map((card, i) => flipUp(card, i * 170)));
+}
+
+/** Counts a balance up or down rather than snapping to the new figure. */
+function countTo(el, from, to) {
+    if (reducedMotion.matches || from === to) {
+        el.innerText = to;
+        return;
     }
+    const start = performance.now();
+    const duration = 520;
+    const step = now => {
+        const t = Math.min(1, (now - start) / duration);
+        // Ease out, so it slows into the final number.
+        const eased = 1 - Math.pow(1 - t, 3);
+        el.innerText = Math.round(from + (to - from) * eased);
+        if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
 }
 
-function determineWinner() {
-   if(results=='tie') {
-     winLose=0
-   } else if(results=='win') {
-     winLose=1
-   } else winLose=-1
+/** Marks the hand that took the round. */
+function markOutcome(outcome) {
+    [playerHand, computerHand].forEach(hand => hand.classList.remove('hand-won'));
+    if (outcome === 'player') playerHand.classList.add('hand-won');
+    if (outcome === 'banker') computerHand.classList.add('hand-won');
 }
 
-function generateMultiplier(player,computer) {
-    switch (results) {     
-        case 'win':
-            if (player.length === 2) {
-                const [card1, card2] = Array.from(player);
-                if (card1.dataset.value === card2.dataset.value || card1.dataset.suit === card2.dataset.suit) {
-                    multiplier = 2;
-                } else {
-                    multiplier = 1;  // Default multiplier if no conditions are met
-                }
-            } else if (player.length === 3) {
-                const [card1, card2, card3] = Array.from(player);
-                if (((card1.dataset.value === card2.dataset.value) && (card1.dataset.value === card3.dataset.value)) ||( (card1.dataset.suit === card2.dataset.suit) && (card2.dataset.suit === card3.dataset.suit)) ) {
-                    multiplier = 3;
-                } else {
-                    multiplier = 1;  // Default multiplier if no conditions are met
-                }
-            } 
-            break;
-
-        case 'lose':
-            if (computer.length === 2) {
-                const [card1, card2] = Array.from(computer);
-            if (card1.dataset.value === card2.dataset.value || card1.dataset.suit === card2.dataset.suit) {
-                    multiplier = 2;
-                } else {
-                    multiplier = 1;  // Default multiplier if no conditions are met
-                }
-            } else if (computer.length === 3) {
-                const [card1, card2, card3] = Array.from(computer);
-            if (((card1.dataset.value === card2.dataset.value) && (card1.dataset.value === card3.dataset.value)) ||((card1.dataset.suit === card2.dataset.suit) && (card2.dataset.suit === card3.dataset.suit))) {
-                    multiplier = 3;
-                } else {
-                    multiplier = 1;  // Default multiplier if no conditions are met
-                }
-            } 
-            break;
-
-        default:
-            multiplier = 0;  // Default multiplier for tie or other cases
+/**
+ * Calls the hand before it's turned over — a natural, or whose turn it is
+ * to draw. Resolves once the announcement has been read.
+ */
+function announce(text, ms = 1100) {
+    const banner = document.getElementById('announce');
+    if (!banner) return Promise.resolve();
+    banner.textContent = text;
+    banner.classList.add('is-on');
+    if (reducedMotion.matches) {
+        setTimeout(() => banner.classList.remove('is-on'), 400);
+        return Promise.resolve();
     }
+    return pause(ms).then(() => {
+        banner.classList.remove('is-on');
+        return pause(220);
+    });
 }
 
+/** Sends the staked chip across the felt when a bet is placed. */
+function tossChip(button) {
+    if (reducedMotion.matches) return;
+    const from = button.getBoundingClientRect();
+    const ghost = button.cloneNode(true);
+    ghost.classList.add('chip-ghost');
+    ghost.disabled = true;
+    ghost.style.left = `${from.left}px`;
+    ghost.style.top = `${from.top}px`;
+    ghost.style.width = `${from.width}px`;
+    ghost.style.height = `${from.height}px`;
+    document.body.appendChild(ghost);
 
-
-
-function payOut() {
-// A loss pays up to 3x the wager, so even an affordable bet can overshoot
-// the balance — clamp at zero rather than going into debt.
-newPlayer.bankBalance = Math.max(0, newPlayer.bankBalance + (wagerAmt*multiplier*winLose))
-renderBank.innerText = newPlayer.bankBalance
-displayResult.textContent = results + ' $' + (wagerAmt*multiplier)
-endState.style.display = 'flex'
+    // Toward the middle of the table, where the hands are about to land.
+    requestAnimationFrame(() => {
+        ghost.style.transform = `translate(${
+            window.innerWidth / 2 - from.left - from.width / 2
+        }px, ${window.innerHeight / 2 - from.top - from.height / 2}px) scale(0.55)`;
+        ghost.style.opacity = '0';
+    });
+    setTimeout(() => ghost.remove(), 620);
 }
 
 continueGame.addEventListener('click', resetGame)
@@ -326,8 +508,15 @@ function resetGame() {
         computerHand.removeChild(computerHand.firstChild);
     }
     deck =[]
-    natural=false
     endState.style.display = 'none'
+    delete endState.dataset.outcome
+    playerHand.classList.remove('hand-won')
+    computerHand.classList.remove('hand-won')
+    playerTotalEl.textContent = ''
+    bankerTotalEl.textContent = ''
+    backingEl.textContent = ''
+    punterArea.classList.remove('is-backed')
+    bankerArea.classList.remove('is-backed')
     // The table and the betting panel are siblings in a flex row, so the
     // table has to be hidden or they render side by side.
     startGameState.style.display = 'none'
@@ -351,3 +540,8 @@ playAgain.addEventListener('click', function () {
     updateChips()
     wagerContainer.style.display = 'block'
 })
+
+/* Exposed for the rules test, which drives these directly. */
+if (typeof window !== 'undefined') {
+    window.__rules = { totalOf, isNatural, playerDraws, bankerDraws, winningSide, settle }
+}

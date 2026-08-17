@@ -1,55 +1,89 @@
-## BarCarRat
+# Bar Car Rat
 
-https://lee-lionel.github.io/BarCarRat/
+**Baccarat, but with worse decisions.** Punto banco in the browser — no build
+step, no dependencies, three files.
 
-![Start Page Screenshot](StartPageSS.png)
-![Wager Screenshot](WagerBoxSS.png)
-![Win state Screenshot](WinPageSS.png)
+▶︎ **[Play it](https://lee-lionel.github.io/BarCarRat/)**
 
-The goal of this Baccarat game is to have a hand that has higher points than your opponent (in this case referring to the computer) start by declaring your initial bet -> amount that determines how much you win or lose. Both parties will start with 2 cards in hand, and you can draw an additional card if you are unhappy with the points of their hand. If the points in your hand is more than the computer, you win, vice versa. For a comprehensive guide on how to play the game, refer to rules.txt.
+![The betting panel: Player, Banker and Tie with their payouts, above four chips](screenshots/02-betting.png)
 
-## HTML 
-- `input`: `playerInput` for the player to key in his/her name
-–  A collection of `div` elements to display my game
-i.e. 
-`wagerContainer` : the player to choose how much he wants to bet
-`playerHand` and `computerHand` : store the cards in respective player hands
-`bankBalance` : display the player’s bank balance
+## How the game works
 
-## CSS 
-The styling for the game. Mainly using simple CSS to style the game board and the cards. `Red` and `Black` classes are defined here to render the colours of the card by using ClassList
+Real baccarat has no decisions once the cards are out. You back a hand, both
+hands then draw by fixed rule, and the higher total wins. That is the whole
+game — which is why there is no Hit or Stand here.
 
-## Javascript 
-This file mainly handles game logic
-It includes:
-Classes - Player, Deck, Cards
-Player Class: contain playerName and bankBalance - which will display the name and amount of money the player has left 
-Deck class: contain cards that can run the `shuffle` method to shuffle the cards in deck
-Cards class: contain suit and values, and the method to print the card in HTML, `renderCard`
+**Card values.** Ace is 1, two through nine are face value, and ten, jack,
+queen and king are all **zero**. A hand is the sum of its cards **modulo ten**,
+so 7 + 8 = 15 counts as 5. The best possible hand is 9.
 
-# Global Variable declaration: 
-`newPlayer` – the player object that will be initiated later after the user inputs his Ign
-`wagerAmt` – the amount of money that the player decides to bet on – initially at 0 until he clicks the button 
-`natural` - a boolean variable that tests for auto win conditions
-`results` - a string that contains the result of the game
-`winLose` - an integer that is used to calculate win loss logic, 0 if its a tie, -1 if u lose, 1 if u win
-`multiplier` - an integer that controls how much u win/lose based on your hand combination
+**A natural.** If either hand totals 8 or 9 on its first two cards, the round
+ends immediately and neither hand draws.
 
-Event Listeners: 
-button onclicks that will return their id for the functions to carry out their actions – ie the `wagerButtons`, the corresponding ids reflect how much a player chooses to bet
+**The Player hand** draws a third card on 0–5 and stands on 6–7.
 
-`controlButtons`, depending whether u click hit/stand, runs the `controlClick()` function
+**The Banker hand** is the fiddly one. If the Player stood, the Banker uses the
+same rule — draws on 0–5, stands on 6–7. If the Player drew, whether the Banker
+draws depends on the Banker's total *and* the card the Player drew:
 
-# Functions: 
-`generateDeck()` is a function that creates an array of cards
-`drawCard()` is a function that takes in the parameters (player or computer) and pushes the top card of the deck into the corresponding player hand
-`checkForNatural()` is a function that checks for a auto win game state before proceeding with the game
-`handValue()` is a function that adds the value of the player hand, based on the parameters passed in
-`compareHands()` is a function that compares both parties and return the result
-`determineWinner()` is a function that computes the `winLose` variable
-`generateMultiplier()` is a function that computes the `multiplier` based on hand combination. Normal circumstances the multiplier is 1
-`payOut()` is a function that calculates how much the `player` wins/loses based on the `wagerAmt`
+| Banker total | Draws when the Player's third card is |
+| ------------ | ------------------------------------- |
+| 0–2          | anything                              |
+| 3            | anything except 8                     |
+| 4            | 2–7                                   |
+| 5            | 4–7                                   |
+| 6            | 6–7                                   |
+| 7            | stands                                |
 
-## Future upgrades
-More players?
-Top up function?
+![A resolved hand: Banker 8 against Player 6, with the winning hand lit](screenshots/04-result.png)
+
+## What the bets pay
+
+| Bet    | Pays        | Note                                                        |
+| ------ | ----------- | ----------------------------------------------------------- |
+| Player | 1 : 1       |                                                              |
+| Banker | 1 : 1 − 5%  | The commission is what stops the slightly-favoured hand being free money |
+| Tie    | 8 : 1       |                                                              |
+
+A tie **pushes** Player and Banker bets — the stake comes back rather than
+being taken.
+
+## At the table
+
+![The table mid-hand, the Banker's cards still face down](screenshots/03-table.png)
+
+The round is dealt Player, Banker, Player, Banker, with the Banker's hand face
+down. Cards slide in off the shoe one at a time. The hand is then called
+(*Natural*, *Player draws*, *Player stands*, *Banker draws*), the Banker's
+cards turn over one by one, and only then does the balance move and the result
+appear. Nothing resolves on top of the deal.
+
+A gold rail marks the hand you backed. The winning hand lifts and glows.
+
+![Name entry](screenshots/01-seat.png)
+
+## The code
+
+| File         | What's in it                                                     |
+| ------------ | ---------------------------------------------------------------- |
+| `index.html` | Four panels — seat, table, betting, result — toggled by display   |
+| `script.js`  | The rules, then the table                                        |
+| `style.css`  | Felt, cards, chips, and the deal / flip / reveal animations       |
+
+The rules live in pure functions with no DOM and no timing —
+`totalOf`, `isNatural`, `playerDraws`, `bankerDraws`, `winningSide`, `settle` —
+so they can be checked directly against the table above. Everything after them
+is pacing, and none of it decides anything: the hand is settled before the
+first card is turned over.
+
+`prefers-reduced-motion` is respected throughout; the animation collapses and
+the game plays instantly.
+
+## Running it
+
+No build. Open `index.html`, or serve the folder:
+
+```bash
+python3 -m http.server 4600
+# then visit http://localhost:4600
+```

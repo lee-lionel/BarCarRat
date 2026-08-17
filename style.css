@@ -247,6 +247,8 @@ kbd {
 }
 
 .table {
+  /* Containing block for #announce, which sits over the felt. */
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -352,18 +354,110 @@ kbd {
   border: 1px solid rgba(0, 0, 0, 0.16);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-card);
-  animation: deal 0.28s ease-out both;
+  /* Cards come off the shoe one at a time. --i is the card's place in the
+     hand, set by drawCard. */
+  /* Timing mirrors DEAL_STEP / DEAL_DURATION in script.js, which waits for
+     the deal to land before resolving the round. */
+  animation: deal 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 160ms);
+  backface-visibility: hidden;
 }
 
+/* Slid in from the shoe at the top right, skidding to a stop. */
 @keyframes deal {
-  from {
+  0% {
     opacity: 0;
-    transform: translateY(-14px) rotate(-4deg);
+    transform: translate(52vw, -46vh) rotate(22deg) scale(0.86);
   }
-  to {
+  70% {
+    opacity: 1;
+  }
+  100% {
     opacity: 1;
     transform: none;
   }
+}
+
+/* The turn. The face is swapped by script.js at the halfway point, while the
+   card is edge-on, so the change is never visible. */
+.card.flipping {
+  animation: flip 0.46s cubic-bezier(0.42, 0, 0.58, 1) both;
+  z-index: 2;
+}
+
+@keyframes flip {
+  0% {
+    transform: perspective(700px) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(700px) rotateY(90deg) scale(1.06);
+  }
+  100% {
+    transform: perspective(700px) rotateY(0deg);
+  }
+}
+
+/* The hand that took the round lifts and warms for a moment. */
+.hand.hand-won .card {
+  animation: won 0.9s ease-out 0.05s both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes won {
+  0% {
+    box-shadow: var(--shadow-card);
+  }
+  35% {
+    transform: translateY(-10px);
+    box-shadow: var(--shadow-card), 0 0 22px 4px rgba(240, 220, 154, 0.55);
+  }
+  100% {
+    transform: none;
+    box-shadow: var(--shadow-card), 0 0 0 1px rgba(240, 220, 154, 0.5);
+  }
+}
+
+/* The call, before the hand is turned over. */
+#announce {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.86);
+  /* Above the cards. The deal animation gives each card its own stacking
+     context, so this has to clear them outright. */
+  z-index: 30;
+  padding: 14px 38px;
+  font-family: var(--font-display, inherit);
+  font-size: clamp(26px, 6vw, 44px);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--gold-300, #f0dc9a);
+  /* Opaque: at 88% the card backs showed through and muddied the word. */
+  background: #06231a;
+  border: 1px solid rgba(226, 196, 105, 0.5);
+  box-shadow: 0 18px 50px -12px rgba(0, 0, 0, 0.7);
+  border-radius: 999px;
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity 0.32s ease-out,
+    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+#announce.is-on {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* The staked chip, thrown across the felt. */
+.chip-ghost {
+  position: fixed;
+  z-index: 60;
+  margin: 0;
+  pointer-events: none;
+  transition:
+    transform 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.6s ease-out;
 }
 
 .red {
@@ -475,9 +569,6 @@ kbd {
   align-items: center;
   gap: 18px;
   position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   z-index: 10;
   width: min(90vw, 420px);
   padding: clamp(26px, 5vw, 38px);
@@ -486,6 +577,78 @@ kbd {
   border-radius: var(--radius-lg);
   background: linear-gradient(170deg, #0f5238, #06281c);
   box-shadow: var(--shadow-panel), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/* Out of chips is terminal — there's no hand left to look at, so it sits
+   in the middle. */
+#gameOver {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  flex-direction: column;
+}
+
+/* The round result sits low and comes up from the rail, so the hand you just
+   watched being dealt stays visible behind it. */
+/* A low bar rather than a tall panel: the hand you just watched being dealt
+   stays visible above it. On anything wider than a phone it reads as a row. */
+#endState {
+  bottom: clamp(12px, 3vh, 28px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: min(94vw, 620px);
+  gap: 6px 22px;
+  padding: 14px 22px;
+  animation: result-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (min-width: 620px) {
+  #endState {
+    flex-direction: row;
+    align-items: center;
+    text-align: left;
+  }
+  #endState h1 {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  #result {
+    display: inline;
+    margin-top: 0;
+  }
+  #resultDetail {
+    flex: 1 1 auto;
+  }
+  #continueGame {
+    flex: 0 0 auto;
+  }
+}
+
+@keyframes result-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(26px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* The felt answers the verdict. */
+#endState[data-outcome="win"] {
+  border-color: rgba(240, 220, 154, 0.85);
+  box-shadow:
+    var(--shadow-panel),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 0 40px -6px rgba(240, 220, 154, 0.45);
+}
+
+#endState[data-outcome="lose"] {
+  border-color: rgba(190, 90, 90, 0.55);
+  background: linear-gradient(170deg, #3f1f22, #22090d);
 }
 
 #gameOver {
@@ -569,4 +732,134 @@ kbd {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
+}
+
+
+/* ============================================================
+   Bet side, totals and the backed hand
+   ============================================================ */
+
+.sides {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.sideButton {
+  flex: 1 1 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 12px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--cream);
+  cursor: pointer;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(226, 196, 105, 0.28);
+  border-radius: var(--radius-sm);
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.15s ease;
+}
+
+.sideButton .odds {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(247, 242, 230, 0.5);
+}
+
+.sideButton:hover {
+  transform: translateY(-2px);
+  border-color: rgba(226, 196, 105, 0.5);
+}
+
+.sideButton[aria-checked="true"] {
+  background: linear-gradient(170deg, rgba(226, 196, 105, 0.22), rgba(226, 196, 105, 0.08));
+  border-color: var(--gold-400);
+}
+
+.sideButton[aria-checked="true"] .odds {
+  color: var(--gold-300);
+}
+
+.sideButton:focus-visible {
+  outline: 3px solid var(--gold-300);
+  outline-offset: 3px;
+}
+
+/* Running hand total, beside the hand's name. */
+.total {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-family: var(--font-display);
+  font-size: 0.95em;
+  color: var(--felt-900);
+  background: var(--gold-300);
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.total:empty {
+  display: none;
+}
+
+/* The hand you backed is named on the felt in front of you. */
+.backing {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: rgba(247, 242, 230, 0.6);
+}
+
+.backing:empty {
+  display: none;
+}
+
+/* A rail in front of the hand you put money on. */
+.hand-area.is-backed {
+  position: relative;
+}
+
+.hand-area.is-backed::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -6px;
+  width: 92px;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
+}
+
+.seat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+#playerId {
+  font-family: var(--font-display);
+  font-size: clamp(15px, 3.4vw, 19px);
+  font-weight: 700;
+  color: var(--cream);
+}
+
+/* A push returns the stake — neither win nor loss. */
+#endState[data-outcome="push"] {
+  border-color: rgba(226, 196, 105, 0.4);
+  background: linear-gradient(170deg, #123f4f, #06202b);
+}
+
+#resultDetail {
+  margin: 0;
 }
