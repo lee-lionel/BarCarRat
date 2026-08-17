@@ -839,3 +839,141 @@ kbd {
 .advice:empty {
   display: none;
 }
+
+
+/* ============================================================
+   Paytable
+   ============================================================ */
+
+.paytable-toggle {
+  margin-top: 6px;
+  padding: 7px 16px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--gold-300);
+  background: transparent;
+  border: 1px solid rgba(226, 196, 105, 0.4);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease;
+}
+
+.paytable-toggle:hover {
+  color: var(--cream);
+  border-color: var(--gold-300);
+}
+
+.paytable-toggle:focus-visible {
+  outline: 3px solid var(--gold-300);
+  outline-offset: 3px;
+}
+
+/* Sits over the felt, like a card left on the table. */
+#paytable {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(12px, 4vw, 32px);
+  background: rgba(2, 14, 10, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+#paytable[hidden] {
+  display: none;
+}
+
+.paytable-panel {
+  width: min(96vw, 460px);
+  max-height: 92vh;
+  overflow-y: auto;
+  gap: 14px;
+}
+
+.paytable-grid {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.paytable-grid th,
+.paytable-grid td {
+  padding: 7px 6px;
+  border-bottom: 1px solid rgba(226, 196, 105, 0.16);
+}
+
+.paytable-grid thead th {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(247, 242, 230, 0.55);
+}
+
+.paytable-grid tbody th {
+  font-weight: 600;
+  color: var(--cream);
+}
+
+.paytable-grid td {
+  color: rgba(247, 242, 230, 0.75);
+  font-variant-numeric: tabular-nums;
+}
+
+.paytable-grid td:last-child {
+  color: var(--gold-300);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.auto {
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--felt-900);
+  background: var(--gold-300);
+  border-radius: 999px;
+}
+
+.paytable-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: rgba(247, 242, 230, 0.6);
+}
+
+#paytableClose {
+  padding: 9px 22px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--felt-900);
+  background: linear-gradient(180deg, var(--gold-300), var(--gold-500));
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+#paytableClose:focus-visible {
+  outline: 3px solid var(--cream);
+  outline-offset: 3px;
+}
+
+
+/* Same 44px floor the rest of the table uses on touch. */
+@media (pointer: coarse) {
+  .paytable-toggle,
+  #paytableClose {
+    min-height: 44px;
+    padding-inline: 22px;
+  }
+}

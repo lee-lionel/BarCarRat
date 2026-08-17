@@ -78,6 +78,9 @@ yours. A tie is a **push**: the stake comes back.
 Those frequencies aren't guesses — the test suite classifies all 22,100
 possible three-card hands and checks the counts against them.
 
+The table posts all of this in-game too, behind **Paytable** on the betting
+screen. You should not have to read a repository to know what a hand pays.
+
 ## At the table
 
 ![The table mid-hand, the Banker's cards still face down](screenshots/03-table.png)

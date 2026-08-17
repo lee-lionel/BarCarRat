@@ -614,6 +614,27 @@ function tossChip(button) {
     setTimeout(() => ghost.remove(), 620);
 }
 
+/* ---- Paytable ---------------------------------------------------------
+   The odds and multipliers used to live only in the README, which is no
+   use to somebody deciding what to stake.
+------------------------------------------------------------------------ */
+const paytable = document.getElementById('paytable')
+const paytableToggle = document.getElementById('paytableToggle')
+const paytableClose = document.getElementById('paytableClose')
+
+function setPaytable(open) {
+    paytable.hidden = !open
+    paytableToggle.setAttribute('aria-expanded', String(open))
+    if (open) paytableClose.focus()
+    else paytableToggle.focus()
+}
+
+paytableToggle.addEventListener('click', () => setPaytable(paytable.hidden))
+paytableClose.addEventListener('click', () => setPaytable(false))
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape' && !paytable.hidden) setPaytable(false)
+})
+
 continueGame.addEventListener('click', resetGame)
 
 function resetGame() {

@@ -73,6 +73,42 @@
                 <button class='wagerButtons' id="20">20</button>
             </div>
             <p class="hint">Balance: <span id="wagerBalance"></span></p>
+
+            <button type="button" class="paytable-toggle" id="paytableToggle" aria-expanded="false" aria-controls="paytable">
+                Paytable
+            </button>
+        </div>
+    </div>
+
+    <!-- What each hand pays. Posted, the way a real table posts it. -->
+    <div id="paytable" hidden>
+        <div class="panel paytable-panel">
+            <h3 class="panel-title">Paytable</h3>
+            <p class="panel-sub">Rarer hands pay more. The four rarest win outright, whatever the points say.</p>
+
+            <table class="paytable-grid">
+                <thead>
+                    <tr><th scope="col">Hand</th><th scope="col">Odds</th><th scope="col">Pays</th></tr>
+                </thead>
+                <tbody>
+                    <tr><th scope="row">Straight flush</th><td>0.2%</td><td>6&times; <span class="auto">outright</span></td></tr>
+                    <tr><th scope="row">Three of a kind</th><td>0.24%</td><td>5&times; <span class="auto">outright</span></td></tr>
+                    <tr><th scope="row">Three pictures</th><td>0.9%</td><td>4&times; <span class="auto">outright</span></td></tr>
+                    <tr><th scope="row">Straight</th><td>2.7%</td><td>3&times; <span class="auto">outright</span></td></tr>
+                    <tr><th scope="row">Flush</th><td>5.0%</td><td>3&times;</td></tr>
+                    <tr><th scope="row">Pair</th><td>16.3%</td><td>2&times;</td></tr>
+                    <tr><th scope="row">Anything else</th><td>74.7%</td><td>1&times;</td></tr>
+                </tbody>
+            </table>
+
+            <p class="paytable-note">
+                Tens and pictures count zero; a hand is its total modulo ten.
+                Eight or nine on two cards is a natural and ends the round.
+                A tie is a push. The banker's hand sizes a loss the same way
+                yours sizes a win.
+            </p>
+
+            <button type="button" id="paytableClose">Close</button>
         </div>
     </div>
 
