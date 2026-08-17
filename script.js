@@ -1,10 +1,13 @@
 /* ============================================================
-   Bar Car Rat — punto banco
+   Bar Car Rat — punto banco, house rules
 
-   Real baccarat has no decisions once the cards are out: you back a
-   hand, and both hands then draw by fixed rule. So the game is a bet
-   and a reveal, not a Hit/Stand. The drawing rules below are the
-   standard punto banco table.
+   Scoring, naturals, the banker's drawing table and the payouts are all
+   real punto banco. The one departure is deliberate: at a real table
+   nobody decides anything, because the player hand draws on 0-5 by rule.
+   Here that call is yours. The book's advice is shown under the buttons
+   and you are free to ignore it — hence "worse decisions".
+
+   The banker still plays strictly by the table below.
    ============================================================ */
 
 const SUITS = ["♦","♣","♥","♠"]
@@ -296,10 +299,13 @@ async function startNewRound() {
         bankerTotal = totalOf(handValues(computerHand))
         showTotal(bankerTotalEl, bankerTotal)
     } else {
-        // The player hand acts first, in full view.
+        // Your hand, your call. The book would draw on 0-5 and stand on 6-7,
+        // and it says so under the buttons — but the whole point of the place
+        // is that you get to ignore it.
         let playerThird = null
-        if (playerDraws(playerTotal)) {
-            await announce('Player draws', 800)
+        const move = await awaitPlayerMove(playerTotal)
+
+        if (move === 'hit') {
             drawCard(playerHand)
             await pause(dealSettleDelay() + 200)
             const values = handValues(playerHand)
@@ -307,7 +313,7 @@ async function startNewRound() {
             playerTotal = totalOf(values)
             showTotal(playerTotalEl, playerTotal)
         } else {
-            await announce('Player stands', 700)
+            await announce('Player stands', 650)
         }
 
         // Then the banker's hand is turned over and plays.
@@ -328,6 +334,39 @@ async function startNewRound() {
     showTotal(playerTotalEl, playerTotal)
     showTotal(bankerTotalEl, bankerTotal)
     await finishRound(playerTotal, bankerTotal)
+}
+
+/**
+ * Hands control to the player for the third card, and resolves with their
+ * choice. The banker still follows the published table afterwards, so the
+ * only judgement in the round is yours.
+ */
+function awaitPlayerMove(playerTotal) {
+    const controlPanel = document.getElementById('controlPanel')
+    const advice = document.getElementById('advice')
+    const hit = document.getElementById('hit')
+    const stand = document.getElementById('stand')
+
+    // What punto banco would do here, offered rather than enforced.
+    advice.textContent = playerDraws(playerTotal)
+        ? `On ${playerTotal} the book draws.`
+        : `On ${playerTotal} the book stands.`
+
+    controlPanel.style.display = 'inline-flex'
+
+    return new Promise(resolve => {
+        const finish = choice => {
+            controlPanel.style.display = 'none'
+            advice.textContent = ''
+            hit.removeEventListener('click', onHit)
+            stand.removeEventListener('click', onStand)
+            resolve(choice)
+        }
+        const onHit = () => finish('hit')
+        const onStand = () => finish('stand')
+        hit.addEventListener('click', onHit)
+        stand.addEventListener('click', onStand)
+    })
 }
 
 /** The point values of a hand, in dealt order. */
@@ -509,6 +548,8 @@ function resetGame() {
     }
     deck =[]
     endState.style.display = 'none'
+    document.getElementById('controlPanel').style.display = 'none'
+    document.getElementById('advice').textContent = ''
     delete endState.dataset.outcome
     playerHand.classList.remove('hand-won')
     computerHand.classList.remove('hand-won')

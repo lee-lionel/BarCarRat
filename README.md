@@ -9,9 +9,13 @@ step, no dependencies, three files.
 
 ## How the game works
 
-Real baccarat has no decisions once the cards are out. You back a hand, both
-hands then draw by fixed rule, and the higher total wins. That is the whole
-game — which is why there is no Hit or Stand here.
+Back a hand — **Player**, **Banker** or **Tie** — and stake a chip. Both hands
+are dealt two cards, the Banker's face down.
+
+At a real table nobody decides anything from here: the Player hand draws on
+0–5 by rule. **This table gives you that call.** Hit or stand as you like; the
+book's advice is printed under the buttons and ignoring it is the entire
+premise. The Banker still plays strictly by the published table.
 
 **Card values.** Ace is 1, two through nine are face value, and ten, jack,
 queen and king are all **zero**. A hand is the sum of its cards **modulo ten**,
@@ -20,7 +24,8 @@ so 7 + 8 = 15 counts as 5. The best possible hand is 9.
 **A natural.** If either hand totals 8 or 9 on its first two cards, the round
 ends immediately and neither hand draws.
 
-**The Player hand** draws a third card on 0–5 and stands on 6–7.
+**The Player hand** would draw on 0–5 and stand on 6–7. That's the advice
+shown under Hit and Stand — here it's yours to overrule.
 
 **The Banker hand** is the fiddly one. If the Player stood, the Banker uses the
 same rule — draws on 0–5, stands on 6–7. If the Player drew, whether the Banker
@@ -34,6 +39,8 @@ draws depends on the Banker's total *and* the card the Player drew:
 | 5            | 4–7                                   |
 | 6            | 6–7                                   |
 | 7            | stands                                |
+
+![Your move: a Player hand of 3 against the Banker's face-down cards, with Hit and Stand](screenshots/03-your-move.png)
 
 ![A resolved hand: Banker 8 against Player 6, with the winning hand lit](screenshots/04-result.png)
 
@@ -53,8 +60,8 @@ being taken.
 ![The table mid-hand, the Banker's cards still face down](screenshots/03-table.png)
 
 The round is dealt Player, Banker, Player, Banker, with the Banker's hand face
-down. Cards slide in off the shoe one at a time. The hand is then called
-(*Natural*, *Player draws*, *Player stands*, *Banker draws*), the Banker's
+down. Cards slide in off the shoe one at a time. You take your card or stand,
+the hand is called (*Natural*, *Player stands*, *Banker draws*), the Banker's
 cards turn over one by one, and only then does the balance move and the result
 appear. Nothing resolves on top of the deal.
 
@@ -72,9 +79,9 @@ A gold rail marks the hand you backed. The winning hand lifts and glows.
 
 The rules live in pure functions with no DOM and no timing —
 `totalOf`, `isNatural`, `playerDraws`, `bankerDraws`, `winningSide`, `settle` —
-so they can be checked directly against the table above. Everything after them
-is pacing, and none of it decides anything: the hand is settled before the
-first card is turned over.
+so they can be checked directly against the table above. `playerDraws` is what
+the advice line reports rather than what the game enforces; the Banker's rule
+is enforced exactly.
 
 `prefers-reduced-motion` is respected throughout; the animation collapses and
 the game plays instantly.

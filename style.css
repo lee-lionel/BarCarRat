@@ -863,3 +863,17 @@ kbd {
 #resultDetail {
   margin: 0;
 }
+
+
+/* The book's recommendation, under the Hit/Stand buttons. Offered, not
+   enforced — ignoring it is the entire premise. */
+.advice {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: rgba(247, 242, 230, 0.5);
+}
+
+.advice:empty {
+  display: none;
+}
