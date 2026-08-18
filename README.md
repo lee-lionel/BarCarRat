@@ -1,55 +1,123 @@
-## BarCarRat
+# Bar Car Rat
 
-https://lee-lionel.github.io/BarCarRat/
+**Baccarat, but with worse decisions.** Punto banco in the browser — no build
+step, no dependencies, three files.
 
-![Start Page Screenshot](StartPageSS.png)
-![Wager Screenshot](WagerBoxSS.png)
-![Win state Screenshot](WinPageSS.png)
+▶︎ **[Play it](https://lee-lionel.github.io/BarCarRat/)**
 
-The goal of this Baccarat game is to have a hand that has higher points than your opponent (in this case referring to the computer) start by declaring your initial bet -> amount that determines how much you win or lose. Both parties will start with 2 cards in hand, and you can draw an additional card if you are unhappy with the points of their hand. If the points in your hand is more than the computer, you win, vice versa. For a comprehensive guide on how to play the game, refer to rules.txt.
+![The betting screen: "Stake a chip. You play your hand; the banker plays by the book." above four chips valued 5 to 20, a $200 balance and a Paytable button](screenshots/02-betting.jpg)
 
-## HTML 
-- `input`: `playerInput` for the player to key in his/her name
-–  A collection of `div` elements to display my game
-i.e. 
-`wagerContainer` : the player to choose how much he wants to bet
-`playerHand` and `computerHand` : store the cards in respective player hands
-`bankBalance` : display the player’s bank balance
+## How the game works
 
-## CSS 
-The styling for the game. Mainly using simple CSS to style the game board and the cards. `Red` and `Black` classes are defined here to render the colours of the card by using ClassList
+Stake a chip. You and the banker are dealt two cards each, the banker's face
+down.
 
-## Javascript 
-This file mainly handles game logic
-It includes:
-Classes - Player, Deck, Cards
-Player Class: contain playerName and bankBalance - which will display the name and amount of money the player has left 
-Deck class: contain cards that can run the `shuffle` method to shuffle the cards in deck
-Cards class: contain suit and values, and the method to print the card in HTML, `renderCard`
+At a real table nobody decides anything from here: the player hand draws on
+0–5 by rule. **This table gives you that call.** Hit or stand as you like; the
+book's advice is printed under the buttons and ignoring it is the entire
+premise. The banker still plays strictly by the published table.
 
-# Global Variable declaration: 
-`newPlayer` – the player object that will be initiated later after the user inputs his Ign
-`wagerAmt` – the amount of money that the player decides to bet on – initially at 0 until he clicks the button 
-`natural` - a boolean variable that tests for auto win conditions
-`results` - a string that contains the result of the game
-`winLose` - an integer that is used to calculate win loss logic, 0 if its a tie, -1 if u lose, 1 if u win
-`multiplier` - an integer that controls how much u win/lose based on your hand combination
+**Card values.** Ace is 1, two through nine are face value, and ten, jack,
+queen and king are all **zero**. A hand is the sum of its cards **modulo ten**,
+so 7 + 8 = 15 counts as 5. The best possible hand is 9.
 
-Event Listeners: 
-button onclicks that will return their id for the functions to carry out their actions – ie the `wagerButtons`, the corresponding ids reflect how much a player chooses to bet
+**A natural.** If either hand totals 8 or 9 on its first two cards, the round
+ends immediately and neither hand draws.
 
-`controlButtons`, depending whether u click hit/stand, runs the `controlClick()` function
+**The Player hand** would draw on 0–5 and stand on 6–7. That's the advice
+shown under Hit and Stand — here it's yours to overrule.
 
-# Functions: 
-`generateDeck()` is a function that creates an array of cards
-`drawCard()` is a function that takes in the parameters (player or computer) and pushes the top card of the deck into the corresponding player hand
-`checkForNatural()` is a function that checks for a auto win game state before proceeding with the game
-`handValue()` is a function that adds the value of the player hand, based on the parameters passed in
-`compareHands()` is a function that compares both parties and return the result
-`determineWinner()` is a function that computes the `winLose` variable
-`generateMultiplier()` is a function that computes the `multiplier` based on hand combination. Normal circumstances the multiplier is 1
-`payOut()` is a function that calculates how much the `player` wins/loses based on the `wagerAmt`
+**The Banker hand** is the fiddly one. If the Player stood, the Banker uses the
+same rule — draws on 0–5, stands on 6–7. If the Player drew, whether the Banker
+draws depends on the Banker's total *and* the card the Player drew:
 
-## Future upgrades
-More players?
-Top up function?
+| Banker total | Draws when the Player's third card is |
+| ------------ | ------------------------------------- |
+| 0–2          | anything                              |
+| 3            | anything except 8                     |
+| 4            | 2–7                                   |
+| 5            | 4–7                                   |
+| 6            | 6–7                                   |
+| 7            | stands                                |
+
+![Your move: a Player hand of 0 against the Banker's face-down cards, with Hit and Stand, and the advice "On 0 the book draws."](screenshots/03-your-move.jpg)
+
+![A resolved hand: Banker 6 against Player 0, called "Player stands", with the result and the balance updated](screenshots/04-result.jpg)
+
+## Hands and what they pay
+
+Points decide most rounds, but some shapes are worth more than their points —
+and four of them win outright no matter what the points say. A straight of
+4-5-6 counts **5** in baccarat, and three pictures counts **0**, the worst
+total in the game. Without an auto-win rule the best-looking hands on the felt
+would be the ones that lose.
+
+Payouts are ordered by how often each hand actually appears in three cards
+from a 52-card deck, so a rarer hand always pays more:
+
+| Hand            | Frequency | Pays | Wins outright |
+| --------------- | --------- | ---- | ------------- |
+| Straight flush  | 0.20 %    | 6×   | yes           |
+| Three of a kind | 0.24 %    | 5×   | yes           |
+| Three pictures  | 0.92 %    | 4×   | yes           |
+| Straight        | 2.71 %    | 3×   | yes           |
+| Flush           | 4.98 %    | 3×   | no            |
+| Pair            | 16.29 %   | 2×   | no            |
+| Anything else   | 74.66 %   | 1×   | no            |
+
+Two-card hands keep the original rule: a **pair** or a **matched suit** pays 2×.
+
+A hand that wins outright beats any hand ranked below it. Two hands of the same
+rank fall back to points. **Flush** and **pair** are bonuses only — they still
+have to win on points, they just change what the win is worth.
+
+The multiplier cuts both ways. The banker drawing a straight flush against you
+costs six times your stake, exactly as it would pay six times if it were
+yours. A tie is a **push**: the stake comes back.
+
+Those frequencies aren't guesses — the test suite classifies all 22,100
+possible three-card hands and checks the counts against them.
+
+The table posts all of this in-game too, behind **Paytable** on the betting
+screen. You should not have to read a repository to know what a hand pays.
+
+## At the table
+
+![The table mid-hand: the Player's two cards face up, the Banker's still face down, the stake shown on the felt](screenshots/03-table.jpg)
+
+The round is dealt Player, Banker, Player, Banker, with the Banker's hand face
+down. Cards slide in off the shoe one at a time. You take your card or stand,
+the hand is called (*Natural*, *Player stands*, *Banker draws*), the Banker's
+cards turn over one by one, and only then does the balance move and the result
+appear. Nothing resolves on top of the deal.
+
+A gold rail marks your hand — the Player side, always yours. The winning
+hand lifts and glows.
+
+![The entry screen on green felt, asking the player to choose a name](screenshots/01-seat.jpg)
+
+## The code
+
+| File         | What's in it                                                     |
+| ------------ | ---------------------------------------------------------------- |
+| `index.html` | Four panels — seat, table, betting, result — toggled by display   |
+| `script.js`  | The rules, then the table                                        |
+| `style.css`  | Felt, cards, chips, and the deal / flip / reveal animations       |
+
+The rules live in pure functions with no DOM and no timing —
+`totalOf`, `isNatural`, `playerDraws`, `bankerDraws`, `winningSide`, `settle` —
+plus `evaluateHand` for the shapes above — so they can be checked directly
+against the tables. `playerDraws` is what the advice line reports rather than
+what the game enforces; the banker's rule is enforced exactly.
+
+`prefers-reduced-motion` is respected throughout; the animation collapses and
+the game plays instantly.
+
+## Running it
+
+No build. Open `index.html`, or serve the folder:
+
+```bash
+python3 -m http.server 4600
+# then visit http://localhost:4600
+```
