@@ -5,7 +5,7 @@ step, no dependencies, three files.
 
 ▶︎ **[Play it](https://lee-lionel.github.io/BarCarRat/)**
 
-![The betting panel: Player, Banker and Tie with their payouts, above four chips](screenshots/02-betting.png)
+![The betting screen: "Stake a chip. You play your hand; the banker plays by the book." above four chips valued 5 to 20, a $200 balance and a Paytable button](screenshots/02-betting.jpg)
 
 ## How the game works
 
@@ -40,9 +40,9 @@ draws depends on the Banker's total *and* the card the Player drew:
 | 6            | 6–7                                   |
 | 7            | stands                                |
 
-![Your move: a Player hand of 3 against the Banker's face-down cards, with Hit and Stand](screenshots/03-your-move.png)
+![Your move: a Player hand of 0 against the Banker's face-down cards, with Hit and Stand, and the advice "On 0 the book draws."](screenshots/03-your-move.jpg)
 
-![A resolved hand: Banker 8 against Player 6, with the winning hand lit](screenshots/04-result.png)
+![A resolved hand: Banker 6 against Player 0, called "Player stands", with the result and the balance updated](screenshots/04-result.jpg)
 
 ## Hands and what they pay
 
@@ -83,7 +83,7 @@ screen. You should not have to read a repository to know what a hand pays.
 
 ## At the table
 
-![The table mid-hand, the Banker's cards still face down](screenshots/03-table.png)
+![The table mid-hand: the Player's two cards face up, the Banker's still face down, the stake shown on the felt](screenshots/03-table.jpg)
 
 The round is dealt Player, Banker, Player, Banker, with the Banker's hand face
 down. Cards slide in off the shoe one at a time. You take your card or stand,
@@ -91,9 +91,10 @@ the hand is called (*Natural*, *Player stands*, *Banker draws*), the Banker's
 cards turn over one by one, and only then does the balance move and the result
 appear. Nothing resolves on top of the deal.
 
-A gold rail marks the hand you backed. The winning hand lifts and glows.
+A gold rail marks your hand — the Player side, always yours. The winning
+hand lifts and glows.
 
-![Name entry](screenshots/01-seat.png)
+![The entry screen on green felt, asking the player to choose a name](screenshots/01-seat.jpg)
 
 ## The code
 
